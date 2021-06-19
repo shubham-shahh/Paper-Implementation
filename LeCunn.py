@@ -8,13 +8,18 @@ import torchvision.transforms as transforms
 
 import torch.nn.functional as F
 import torch.optim as optim
+from utils import * 
+
+#LeNet Paper
+# http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
 
 #ETL
 # 1) Extract - Get the image data from the source
 # 2) Transform - Put our data into Tensor form
 # 3) Load - Put our data into an object to make it easily accessible
 
-#Pytorch has 2 classes Dataset and DataLoader to process data (not necessary for MNIST as it comes with torchvision and does ir behind the scenes)
+#Pytorch has 2 classes Dataset and DataLoader to process data
+#(not necessary for MNIST as it comes with torchvision and does it behind the scenes)
 
 
 
@@ -64,89 +69,6 @@ class LeNet(nn.Module):
 #6) Repeat setps 1-5 until one Epoch is completed (All batches of the training set)
 #7) repeat steps 1-6 for required number of epochs
 
-def get_correct_preds(preds, labels):
-    return preds.argmax(dim=1).eq(labels).sum().item()
-
-def save_checkpoint(state, filename="./checkpoints/my_checkpoint.pth.tar"):
-    print("Saving Checkpoint")
-    torch.save(state,filename)
-
-
-def load_checkpoint(network, path):
-    print("Loading Checkpoint")
-    optimizer = optim.Adam(network.parameters(), lr = 0.01)
-    
-    checkpoint = torch.load(path)
-    network.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
-
-    
-    #optimizer.load_state_dict(checkpoint['optimizer'])
-    #for state in optimizer.state.values():
-        #for k, v in state.items():
-            #if isinstance(v, torch.Tensor):
-                #state[k] = v.cuda()
-
-def evaluate(loader, network,device):
-    num_correct = 0
-    num_samples = 0
-    network.eval()
-
-    with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device=device)
-            y = y.to(device=device)
-
-            scores = network(x)
-            _, predictions = scores.max(1)
-            num_correct += (predictions == y).sum()
-            num_samples += predictions.size(0)
-            accuracy = (num_correct/num_samples)*100
-        print(f'accuracy {accuracy}')
-
-
-def Train(network, train_loader, device, epochs=20):
-
-    load_model = False
-
-
-    optimizer = optim.Adam(network.parameters(), lr = 0.01)
-    if load_model:
-        load_checkpoint(network, path = "./checkpoints/my_checkpoint.pth.tar")
-
-    for epoch in range(epochs):
-        total_loss = 0
-        total_correct = 0
-
-        checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': network.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': total_loss,
-            }
-        
-        if epoch % 10 == 0:
-            save_checkpoint(checkpoint) 
-
-        for batch in train_loader:
-            images,labels = batch
-            images, labels = images.to(device), labels.to(device)
-
-            preds = network(images)
-            loss = F.cross_entropy(preds, labels)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
-            total_correct += get_correct_preds(preds, labels)
-
-        print("epoch: ",epoch, "total_correct: ", total_correct, "loss: ", total_loss)
-
-
 #Main
 
 
@@ -160,8 +82,8 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_set, batch_size = 100)
     network = LeNet()
     network.to(device)
-    Train(network, train_loader, device, epochs  = 50)
-    #load_checkpoint(network, path = "./my_checkpoint.pth.tar")
+    Train(network, train_loader, device, epochs  = 5, load_model=False)
+    #load_checkpoint(network, path = "./checkpoints/my_checkpoint.pth.tar")
     #evaluate(train_loader, network, device)
 
 
