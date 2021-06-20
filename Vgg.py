@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 
 import torch.nn.functional as F
 import torch.optim as optim
+from utils import *
 
 
 VGG_types = {
@@ -48,23 +49,35 @@ class VGG_net(nn.Module):
         layers = []
         in_channels = self.in_channels
 
-        for x in architecture:
+        for index, x in enumerate(architecture):
             if type(x) == int:
                 out_channels = x
-
                 layers += [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3,3), stride=(1,1), padding=(1,1)), nn.ReLU()]
                 in_channels = x
-
             elif x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=(2,2), stride=(2,2))]
 
         return nn.Sequential(*layers)
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = VGG_net(in_channels=3, num_classes=1000).to(device)
-x = torch.randn(1, 3, 224, 224).to(device)
-print(model(x).shape)
 
+def main():
+    train_set = torchvision.datasets.FashionMNIST(root='./data/FashionMNIST', train=True, download=True,
+            transform= transforms.Compose([transforms.CenterCrop(228, 228),transforms.ToTensor()]))
+            #.Normalize(mean, std, inplace=False) is used in VGG paper
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 100)
+    network = VGG_net(in_channels=1, num_classes=10)
+    network.to(device)
+    Train(network, train_loader, device, epochs  = 5, load_model=False)
+    #load_checkpoint(network, path = "./checkpoints/my_checkpoint.pth.tar")
+    #evaluate(train_loader, network, device)
+
+
+if __name__ == "__main__":
+    main()
 
 
 
